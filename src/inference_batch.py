@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import os
 import sqlite3
 import re
-from utils import get_inference_user_prompt, get_inference_system_prompt, parse_generated_answer
+from Course.ADL.hw3.src.utils_RL import get_inference_user_prompt, get_inference_system_prompt, parse_generated_answer
 import gc
 load_dotenv()
 hf_token = os.getenv("hf_token")
