@@ -1,0 +1,27 @@
+// ...existing code...
+models/
+vector_database/
+logs/
+results/
+
+# weights / artifacts
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.faiss
+*.zip
+*.tar.gz
+*.tgz
+
+# python
+__pycache__/
+*.pyc
+
+# local
+.env
+.vscode/
+backup_terminal*
+
+#dataset/
+data/
