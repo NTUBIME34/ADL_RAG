@@ -316,3 +316,87 @@ python3 inference_batch.py --data_folder ./data \
 ```
 
 > Note: I corrected obvious typos (e.g., `save_embbedings.py` → `save_embeddings.py`) and standardized dashes to ASCII `--`. If any script names/flags differ in your repo, keep your originals.
+
+
+# (Add-on) Reinforcement Learning — Adaptive K (How Many Passages to Include)
+
+This add-on trains a lightweight policy to decide how many retrieved passages **K** to include in the prompt at inference time. It **does not** change your retriever, reranker, or inference script. The decision happens inside `utils.py` before composing the user prompt.
+
+---
+
+## Idea
+
+* **Action space:** ( K \in {2,3,4,5,6,8,10} )
+* **State (8-d features):** simple stats from the query and candidate contexts
+
+  * query length, number of contexts, avg/max context length, token-diversity ratio, short-query flag, avg length of top-3 contexts, a simple punctuation cue
+* **Policy:** 2-layer MLP (64→64, ReLU) trained with **REINFORCE** (contextual bandit)
+* **Reward (offline):**
+  `reward = hit + 0.3 * margin`, where
+
+  * `hit = 1` if any of the top-K passages contains the gold answer substring; else `0`
+  * `margin = (best − second best)` reranker score within top-K (optional; omit if no scores)
+* **Integration:** `utils.py` loads `./models/k_policy.pt` and truncates `context_list[:K]`.
+  If the policy file is missing, it defaults to **K=5** (original behavior).
+
+---
+
+## Files
+
+* `prep_bandit_data.py` — builds `bandit_train.jsonl` from your `train.txt` + `corpus.txt` using your retriever (and optionally your reranker).
+* `train_k_policy.py` — trains the policy and writes `./models/k_policy.pt`.
+* `utils.py` — contains the `_choose_k()` hook that loads the policy and selects K.
+
+> You do **not** need to modify your inference script. Once `k_policy.pt` exists, `utils.py` will automatically use it.
+
+---
+
+## How to Run
+
+### 1) Prepare offline bandit data
+
+```bash
+python prep_bandit_data.py \
+  --train_file ./data/train.txt \
+  --corpus_file ./data/corpus.txt \
+  --retriever_ckpt ./models/retriever \
+  --reranker_ckpt ./models/reranker \
+  --topk 20 \
+  --out_file ./data/bandit_train.jsonl
+```
+
+*You can omit `--reranker_ckpt` if you don’t have one yet; reward then uses `hit` only.*
+
+### 2) Train the K policy
+
+```bash
+python train_k_policy.py \
+  --bandit_file ./data/bandit_train.jsonl \
+  --epochs 5 \
+  --lr 5e-4 \
+  --save_path ./models/k_policy.pt
+```
+
+### 3) Inference (unchanged)
+
+```bash
+python inference_batch.py \
+  --test_data_path ./data/test_open.txt \
+  --retriever_model_path ./models/retriever \
+  --reranker_model_path ./models/reranker
+```
+
+`utils.py` will automatically use `./models/k_policy.pt` to pick K; otherwise it falls back to **K=5**.
+
+---
+
+## Reporting (Suggested)
+
+Compare **RL-adaptive K** against fixed K baselines (e.g., K=3/5/10) using your existing metrics:
+
+* Retrieval: **Recall@10**
+* Reranking: **MRR@10** (after rerank)
+* Generation: **Bi-Encoder CosSim** (or your official similarity metric)
+
+
+
