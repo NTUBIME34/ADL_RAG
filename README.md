@@ -263,26 +263,7 @@ python3 plot_avgloss.py --input logs/reranker_listwise.jsonl --output results/pl
 Common artifacts
 
 * `results/plots/loss_retriever.png`, `loss_reranker.png`
-* `results/plots/<result>_score_hist.png`
-* `results/plots/<result>_recall.png`
-* `results/plots/<result>_cand_hist.png`
-* `results/plots/summary.json`, `summary.md`
 
----
-
-## FAQ
-
-* **Argument errors (`unrecognized arguments`)**
-  Usually caused by pasting a long dash (`–`). Replace with ASCII `--`, or rely on the script’s argv sanitizer (`inference_batch.py` supports this).
-
-* **CUDA/CPU device mismatch**
-  Ensure the training loop moves features/labels to `model.device` (the retriever training script already handles this).
-
-* **AMP warnings (GradScaler/autocast)**
-  Use `torch.amp.autocast('cuda')` and `torch.amp.GradScaler('cuda')` (the retriever has been updated accordingly).
-
-* **FAISS installation issues**
-  Match FAISS to your PyTorch CUDA version (e.g., `faiss-gpu-cu12` for CUDA 12.x).
 
 ---
 
@@ -353,7 +334,7 @@ This add-on trains a lightweight policy to decide how many retrieved passages **
 
 ## How to Run
 
-### 1) Prepare offline bandit data
+### 1 Prepare offline bandit data
 
 ```bash
 python prep_bandit_data.py \
@@ -367,7 +348,7 @@ python prep_bandit_data.py \
 
 *You can omit `--reranker_ckpt` if you don’t have one yet; reward then uses `hit` only.*
 
-### 2) Train the K policy
+### 2 Train the K policy
 
 ```bash
 python train_k_policy.py \
@@ -377,7 +358,7 @@ python train_k_policy.py \
   --save_path ./models/k_policy.pt
 ```
 
-### 3) Inference (unchanged)
+### 3 Inference (unchanged)
 
 ```bash
 python inference_batch.py \
@@ -390,7 +371,7 @@ python inference_batch.py \
 
 ---
 
-## Reporting (Suggested)
+## Reporting 
 
 Compare **RL-adaptive K** against fixed K baselines (e.g., K=3/5/10) using your existing metrics:
 
